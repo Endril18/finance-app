@@ -1,0 +1,18 @@
+# Ambiente Virtual
+.venv/
+__pycache__/
+*.pyc
+
+# Arquivos do Sistema
+.DS_Store
+
+# Dados Sensíveis (NUNCA suba isso)
+data/*.db
+data/financas.db
+data/raw/*.ofx
+data/raw/*.csv
+*.log
+
+# IDEs (Configurações do VS Code/Pycharm)
+.vscode/
+.idea/
