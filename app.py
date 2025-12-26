@@ -1,6 +1,7 @@
 import streamlit as st
 import time
 from src import tratamento, database, dashboard
+import pandas as pd
 
 # Configuração DEVE ser a primeira linha executável
 st.set_page_config(page_title="Relatório de Finanças", layout="wide")
@@ -62,10 +63,51 @@ if not arquivo:
     df_total = database.carregar_tudo()
     dashboard.renderizar_metricas(df_total)
 
-    # Rodapé / Opções Extras
+    st.sidebar.markdown("---")
+    # Rodapé / Opções Extras / ADMIN
     st.divider()
     if st.sidebar.checkbox("Mostrar Opções de Admin"):
+
+        # Apagar Mês Específico (Sua solicitação)
+        st.sidebar.write("**Apagar Mês Específico:**")
+
+        # Precisamos listar os meses que existem no banco para o usuário escolher
+        # df_total já foi carregado ali em cima no código principal
+        if not df_total.empty:
+            # Garante formato de data
+            df_total['data'] = pd.to_datetime(df_total['data'])
+
+            # Cria lista de strings 'YYYY-MM' únicos e ordena do mais recente
+            lista_periodos = df_total['data'].dt.strftime('%Y-%m').unique()
+            lista_periodos = sorted(lista_periodos, reverse=True)
+
+            # O Seletor
+            periodo_alvo = st.sidebar.selectbox("Selecione o Mês:", lista_periodos)
+
+            # O Botão de Ação
+            if st.sidebar.button(f"Apagar {periodo_alvo}", type="primary"):
+                qtd = database.apagar_periodo_especifico(periodo_alvo)
+                st.toast(f"{qtd} transações de {periodo_alvo} removidas!", icon="🗑️")
+                time.sleep(1)
+                st.rerun()
+        else:
+            st.sidebar.info("Sem dados para gerenciar.")
+
         if st.sidebar.button("🗑️ Limpar Banco de Dados"):
             database.limpar_banco()
             st.warning("Banco de dados reiniciado!")
             st.rerun()
+
+        # Exportar CSV
+        if st.sidebar.button("📥 Baixar CSV"):
+            df_export = database.carregar_tudo()
+            if not df_export.empty:
+                csv_data = df_export.to_csv(index=False).encode('utf-8')
+                st.sidebar.download_button(
+                    label="Clique para Download",
+                    data=csv_data,
+                    file_name='financas_backup.csv',
+                    mime='text/csv'
+                )
+            else:
+                st.sidebar.warning("Sem dados para baixar.")

@@ -73,3 +73,20 @@ def limpar_banco():
     conn.execute("DELETE FROM transacoes")
     conn.commit()
     conn.close()
+
+def apagar_periodo_especifico(periodo_yyyy_mm):
+    """
+    Apaga transações de um mês/ano específico.
+    Entrada esperada: string no formato '2025-10'
+    """
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    # O SQLite armazena data como YYYY-MM-DD.
+    # Usamos strftime para pegar só o YYYY-MM e comparar.
+    c.execute("DELETE FROM transacoes WHERE strftime('%Y-%m', data) = ?", (periodo_yyyy_mm,))
+
+    linhas_afetadas = c.rowcount
+    conn.commit()
+    conn.close()
+    return linhas_afetadas
