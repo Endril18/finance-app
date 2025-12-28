@@ -32,7 +32,7 @@ def categorizar_transacao(descricao):
     desc = descricao.lower()
     if 'uber' in desc or '99' in desc or 'posto' in desc:
         return 'Transporte'
-    elif 'ifood' in desc or 'restaurante' in desc or 'mercado' in desc:
+    elif 'ifood' in desc or 'restaurante' in desc or 'mercado' in desc or 'supermercado' in desc:
         return 'Alimentação'
     elif 'pix' in desc:
         return 'Transferência'

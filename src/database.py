@@ -90,3 +90,50 @@ def apagar_periodo_especifico(periodo_yyyy_mm):
     conn.commit()
     conn.close()
     return linhas_afetadas
+
+# src/database.py
+
+def salvar_edicoes_do_grid(df_original, changes):
+    """
+    Processa as alterações retornadas pelo st.data_editor.
+    changes = {
+        'edited_rows': {indice: {coluna: valor}},
+        'added_rows': [{coluna: valor}],
+        'deleted_rows': [indice]
+    }
+    """
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    # DELETAR (Pelo ID original do banco)
+    for index in changes['deleted_rows']:
+        # O index do dataframe corresponde à linha que foi carregada
+        id_transacao = df_original.iloc[index]['id']
+        cursor.execute("DELETE FROM transacoes WHERE id = ?", (int(id_transacao),))
+
+    # ADICIONAR (Novas linhas)
+    for nova_linha in changes['added_rows']:
+        # Verifica se os campos obrigatórios existem, senão preenche padrão
+        data = nova_linha.get('data', pd.Timestamp.today().strftime('%Y-%m-%d'))
+        desc = nova_linha.get('descricao', 'Nova Transação')
+        valor = float(nova_linha.get('valor', 0.0))
+        cat = nova_linha.get('categoria', 'Outros')
+
+        cursor.execute('''
+            INSERT INTO transacoes (data, descricao, valor, categoria, origem_arquivo)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (data, desc, valor, cat, 'Manual'))
+
+    # EDITAR (Atualizar células específicas)
+    for index, mudancas in changes['edited_rows'].items():
+        id_transacao = df_original.iloc[index]['id']
+
+        for coluna, novo_valor in mudancas.items():
+            # Mapeia nome da coluna do DF para nome da coluna no Banco
+            # (No seu caso já estão iguais: data, descricao, valor, categoria)
+            query = f"UPDATE transacoes SET {coluna} = ? WHERE id = ?"
+            cursor.execute(query, (novo_valor, int(id_transacao)))
+
+    conn.commit()
+    conn.close()
+    return True
